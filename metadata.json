@@ -1,0 +1,5 @@
+{
+  "name": "CoreInventory",
+  "description": "A modular Inventory Management System for real-time stock tracking, warehouse operations, and move history.",
+  "requestFramePermissions": []
+}

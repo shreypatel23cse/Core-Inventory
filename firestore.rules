@@ -1,0 +1,159 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields: uid, email, displayName, role (admin/staff), createdAt
+    //
+    // Collection: products
+    // Fields: name, sku, category, uom, description, active
+    //
+    // Collection: warehouses
+    // Fields: name, code, address
+    //
+    // Collection: locations
+    // Fields: name, code, warehouseId, type (internal/view/supplier/customer/inventory)
+    //
+    // Collection: stock
+    // Fields: productId, locationId, quantity
+    //
+    // Collection: operations
+    // Fields: reference, type, status, sourceLocationId, destLocationId, contact, scheduledDate, responsibleUid, createdAt
+    //
+    // Collection: operations/{opId}/items
+    // Fields: operationId, productId, quantity
+    //
+    // Collection: move_history
+    // Fields: operationId, productId, fromLocationId, toLocationId, quantity, timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          request.auth.token.email == "shreypatel.23.cse@iite.indusuni.ac.in");
+    }
+
+    function isManager() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'manager' || isAdmin());
+    }
+
+    function isStaff() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff' || isManager());
+    }
+
+    function isViewer() {
+      return isAuthenticated();
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function validString(field, min, max) {
+      return request.resource.data[field] is string && request.resource.data[field].size() >= min && request.resource.data[field].size() <= max;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'loginId', 'role', 'createdAt']) &&
+             data.uid is string && data.email is string && isValidEmail(data.email) &&
+             data.loginId is string && data.loginId.size() >= 6 && data.loginId.size() <= 12 &&
+             data.role in ['admin', 'manager', 'staff', 'viewer'];
+    }
+
+    function isValidProduct(data) {
+      return hasRequiredFields(['name', 'sku', 'category', 'uom']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.sku is string && data.sku.size() > 0 && data.sku.size() < 50 &&
+             data.category is string &&
+             data.uom is string;
+    }
+
+    function isValidOperation(data) {
+      return hasRequiredFields(['reference', 'type', 'status', 'createdAt']) &&
+             data.type in ['receipt', 'delivery', 'internal', 'adjustment'] &&
+             data.status in ['draft', 'waiting', 'ready', 'done', 'canceled'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role in ['manager', 'staff', 'viewer'] || isAdmin());
+      allow update: if isAuthenticated() && (isAdmin() || (isOwner(userId) && request.resource.data.role == resource.data.role && isValidUser(request.resource.data)));
+    }
+
+    match /products/{productId} {
+      allow read: if isAuthenticated();
+      allow write: if isManager();
+    }
+
+    match /warehouses/{warehouseId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /locations/{locationId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /stock/{stockId} {
+      allow read: if isAuthenticated();
+      allow write: if isStaff(); // Staff can update quantities
+    }
+
+    match /operations/{operationId} {
+      allow read: if isAuthenticated();
+      allow create: if isManager() && isValidOperation(request.resource.data);
+      allow update: if isStaff() && isValidOperation(request.resource.data);
+      
+      match /items/{itemId} {
+        allow read: if isAuthenticated();
+        allow write: if isStaff();
+      }
+    }
+
+    match /move_history/{moveId} {
+      allow read: if isAuthenticated();
+      allow create: if isStaff();
+    }
+
+    // Default deny
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

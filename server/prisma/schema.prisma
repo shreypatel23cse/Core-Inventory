@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  Admin
+  WarehouseStaff
+  Viewer
+}
+
+enum ReceiptStatus {
+  Draft
+  Ready
+  Done
+  Cancelled
+}
+
+enum DeliveryStatus {
+  Draft
+  Waiting
+  Ready
+  Done
+  Cancelled
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(Viewer)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Product {
+  id            String   @id @default(uuid())
+  name          String
+  sku           String   @unique
+  unit          String
+  description   String?
+  minStockLevel Int      @default(10) @map("min_stock_level")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  stocks        Stock[]
+  receiptItems  ReceiptItem[]
+  deliveryItems DeliveryItem[]
+  moves         InventoryMove[]
+
+  @@map("products")
+}
+
+model Warehouse {
+  id        String   @id @default(uuid())
+  name      String
+  shortCode String   @unique @map("short_code")
+  address   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  locations Location[]
+
+  @@map("warehouses")
+}
+
+model Location {
+  id          String   @id @default(uuid())
+  name        String
+  shortCode   String   @map("short_code")
+  warehouseId String   @map("warehouse_id")
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  stocks      Stock[]
+  receipts    Receipt[]
+  deliveries  Delivery[]
+
+  @@unique([warehouseId, shortCode])
+  @@map("locations")
+}
+
+model Stock {
+  productId  String @map("product_id")
+  locationId String @map("location_id")
+  onHand     Int    @default(0) @map("on_hand")
+  reserved   Int    @default(0)
+
+  product    Product  @relation(fields: [productId], references: [id])
+  location   Location @relation(fields: [locationId], references: [id])
+
+  @@id([productId, locationId])
+  @@map("stock")
+}
+
+model Receipt {
+  id                    String        @id @default(uuid())
+  reference             String        @unique // REC-0001
+  vendor                String
+  scheduledDate         DateTime?     @map("scheduled_date")
+  destinationLocationId String        @map("destination_location_id")
+  destinationLocation   Location      @relation(fields: [destinationLocationId], references: [id])
+  status                ReceiptStatus @default(Draft)
+  createdAt             DateTime      @default(now()) @map("created_at")
+
+  items                 ReceiptItem[]
+
+  @@map("receipts")
+}
+
+model ReceiptItem {
+  id        String  @id @default(uuid())
+  receiptId String  @map("receipt_id")
+  productId String  @map("product_id")
+  quantity  Int
+
+  receipt   Receipt @relation(fields: [receiptId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("receipt_items")
+}
+
+model Delivery {
+  id               String         @id @default(uuid())
+  reference        String         @unique // DEL-0001
+  customer         String
+  contact          String?
+  scheduledDate    DateTime?      @map("scheduled_date")
+  sourceLocationId String         @map("source_location_id")
+  sourceLocation   Location       @relation(fields: [sourceLocationId], references: [id])
+  status           DeliveryStatus @default(Draft)
+  createdAt        DateTime       @default(now()) @map("created_at")
+
+  items            DeliveryItem[]
+
+  @@map("deliveries")
+}
+
+model DeliveryItem {
+  id         String   @id @default(uuid())
+  deliveryId String   @map("delivery_id")
+  productId  String   @map("product_id")
+  quantity   Int
+
+  delivery   Delivery @relation(fields: [deliveryId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id])
+
+  @@map("delivery_items")
+}
+
+model InventoryMove {
+  id                  String   @id @default(uuid())
+  reference           String
+  productId           String   @map("product_id")
+  sourceLocation      String?  @map("source_location") // Stored as name/code for history
+  destinationLocation String?  @map("destination_location")
+  quantity            Int
+  status              String
+  date                DateTime @default(now())
+
+  product             Product  @relation(fields: [productId], references: [id])
+
+  @@map("inventory_moves")
+}
+
+model Settings {
+  id                  String   @id @default("default")
+  autoSku             Boolean  @default(true) @map("auto_sku")
+  lowStockAlerts      Boolean  @default(false) @map("low_stock_alerts")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}

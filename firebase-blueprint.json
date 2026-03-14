@@ -1,0 +1,117 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and role information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "staff"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Inventory product details",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "sku": { "type": "string" },
+        "category": { "type": "string" },
+        "uom": { "type": "string" },
+        "description": { "type": "string" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["name", "sku", "category", "uom"]
+    },
+    "Warehouse": {
+      "title": "Warehouse",
+      "description": "Warehouse facility",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "address": { "type": "string" }
+      },
+      "required": ["name", "code"]
+    },
+    "Location": {
+      "title": "Location",
+      "description": "Specific location within a warehouse",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "warehouseId": { "type": "string" },
+        "type": { "type": "string", "enum": ["internal", "view", "supplier", "customer", "inventory"] }
+      },
+      "required": ["name", "code", "warehouseId", "type"]
+    },
+    "Stock": {
+      "title": "Stock",
+      "description": "Current stock levels per product and location",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "locationId": { "type": "string" },
+        "quantity": { "type": "number" }
+      },
+      "required": ["productId", "locationId", "quantity"]
+    },
+    "Operation": {
+      "title": "Operation",
+      "description": "Inventory movement operation (Receipt, Delivery, Transfer, Adjustment)",
+      "type": "object",
+      "properties": {
+        "reference": { "type": "string" },
+        "type": { "type": "string", "enum": ["receipt", "delivery", "internal", "adjustment"] },
+        "status": { "type": "string", "enum": ["draft", "waiting", "ready", "done", "canceled"] },
+        "sourceLocationId": { "type": "string" },
+        "destLocationId": { "type": "string" },
+        "contact": { "type": "string" },
+        "scheduledDate": { "type": "string", "format": "date-time" },
+        "responsibleUid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["reference", "type", "status", "createdAt"]
+    },
+    "OperationItem": {
+      "title": "OperationItem",
+      "description": "Line item for an operation",
+      "type": "object",
+      "properties": {
+        "operationId": { "type": "string" },
+        "productId": { "type": "string" },
+        "quantity": { "type": "number" }
+      },
+      "required": ["operationId", "productId", "quantity"]
+    },
+    "MoveHistory": {
+      "title": "MoveHistory",
+      "description": "Ledger of stock movements",
+      "type": "object",
+      "properties": {
+        "operationId": { "type": "string" },
+        "productId": { "type": "string" },
+        "fromLocationId": { "type": "string" },
+        "toLocationId": { "type": "string" },
+        "quantity": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "quantity", "timestamp"]
+    }
+  },
+  "firestore": {
+    "users": { "schema": "User", "description": "User profiles" },
+    "products": { "schema": "Product", "description": "Product catalog" },
+    "warehouses": { "schema": "Warehouse", "description": "Warehouses" },
+    "locations": { "schema": "Location", "description": "Locations within warehouses" },
+    "stock": { "schema": "Stock", "description": "Current inventory levels" },
+    "operations": { "schema": "Operation", "description": "Inventory operations" },
+    "operations/{operationId}/items": { "schema": "OperationItem", "description": "Line items for operations" },
+    "move_history": { "schema": "MoveHistory", "description": "Stock movement ledger" }
+  }
+}
