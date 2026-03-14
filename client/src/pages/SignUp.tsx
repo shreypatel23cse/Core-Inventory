@@ -3,11 +3,13 @@ import { authApi } from '../services/api';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { User, Mail, Lock, ShieldCheck, ArrowRight, Chrome, Github } from 'lucide-react';
+import Loader from '../components/Loader';
 
 export default function SignUp({ setUser }: { setUser: any }) {
   const { register, handleSubmit } = useForm();
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
   const navigate = useNavigate();
 
   const [mounted, setMounted] = useState(false);
@@ -18,15 +20,22 @@ export default function SignUp({ setUser }: { setUser: any }) {
     setError('');
     try {
       const resp = await authApi.signup(data);
-      localStorage.setItem('token', resp.data.token);
-      setUser(resp.data.user);
-      navigate('/');
+      // Success - show specialized loader
+      setShowLoader(true);
+
+      setTimeout(() => {
+        localStorage.setItem('token', resp.data.token);
+        setUser(resp.data.user);
+        navigate('/');
+      }, 5000);
+
     } catch (err: any) {
       setError(err.response?.data?.error || 'Account Registration Failed');
-    } finally {
       setIsLoading(false);
     }
   };
+
+  if (showLoader) return <Loader />;
 
   return (
     <div className="min-h-screen flex bg-white font-sans overflow-hidden">
