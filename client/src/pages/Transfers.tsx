@@ -155,7 +155,7 @@ export default function Transfers() {
                 <input 
                   type="number" 
                   {...register('quantity', { required: true, min: 1, max: availableAtSource })} 
-                  className="max-w-[200px] px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-3xl font-black text-slate-900"
+                  className="max-w-[200px] px-8 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-lg font-bold text-slate-900"
                   placeholder="0"
                 />
                 <div className="flex-1 text-slate-400 italic text-sm font-medium">

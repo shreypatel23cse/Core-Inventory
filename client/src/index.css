@@ -4,23 +4,81 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-primary: #88BDF2;
+  --color-primary-foreground: #ffffff;
+  
+  --color-brand: #88bdf2;
+  --color-brand-light: #e0effc;
+  --color-brand-dark: #6ba7e0;
+
+  /* Overriding indigo for consistency */
+  --color-indigo-50: #f0f7fe;
+  --color-indigo-100: #e0effc;
+  --color-indigo-200: #b9dbf8;
+  --color-indigo-300: #88bdf2;
+  --color-indigo-400: #57a0ec;
+  --color-indigo-500: #3484e5;
+  --color-indigo-600: #256ad6;
+  --color-indigo-700: #1f54ad;
+  --color-indigo-800: #1e458c;
+  --color-indigo-900: #1d3b73;
 }
 
 @layer base {
+  :root {
+    --background: theme('colors.stone.50');
+    --foreground: theme('colors.stone.950');
+    --card: #ffffff;
+    --card-foreground: theme('colors.stone.950');
+    --border: theme('colors.stone.200');
+    --muted: theme('colors.stone.100');
+    --muted-foreground: theme('colors.stone.500');
+  }
+
+  .dark {
+    --background: theme('colors.stone.950');
+    --foreground: theme('colors.stone.50');
+    --card: theme('colors.stone.900');
+    --card-foreground: theme('colors.stone.50');
+    --border: theme('colors.stone.800');
+    --muted: theme('colors.stone.900');
+    --muted-foreground: theme('colors.stone.400');
+  }
+
   body {
-    @apply bg-stone-50 text-stone-900 antialiased;
+    background-color: var(--background);
+    color: var(--foreground);
+    @apply antialiased transition-colors duration-300;
   }
 }
 
 .data-row {
-  @apply border-b border-stone-200 hover:bg-stone-100 transition-colors cursor-pointer;
+  @apply border-b transition-colors cursor-pointer;
+  border-color: var(--border);
+}
+
+.data-row:hover {
+  background-color: var(--muted);
 }
 
 .col-header {
-  @apply font-serif italic text-[11px] opacity-50 uppercase tracking-wider py-3 px-4;
+  @apply font-serif italic text-[11px] uppercase tracking-wider py-3 px-4;
+  color: var(--muted-foreground);
 }
 
 .data-value {
   @apply font-mono text-sm py-3 px-4;
+}
+
+.card {
+  background-color: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  @apply rounded-xl shadow-sm;
+}
+
+.btn-primary {
+  @apply bg-primary text-white px-4 py-2 rounded-lg font-medium transition-all hover:opacity-90 active:scale-95 shadow-sm;
 }
 
